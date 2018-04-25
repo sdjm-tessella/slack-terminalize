@@ -17,10 +17,6 @@ var logger        = require('winston'),
   dispatcher = require('./dispatcher'),
   rtmClient, webClient;
 
-var _handleMessage = function (message) {
-  dispatcher.handle(message);
-}
-
 var _startClient = function () {
 
   if (!rtmClient) {
@@ -32,13 +28,11 @@ var _startClient = function () {
   dispatcher.init(rtmClient)
 
   rtmClient.on(CLIENT_EVENTS.RTM.WS_OPENED, function () {
-    logger.info("RTM client's web socket did open. Registering message listener");
-    rtmClient.addListener(RTM_EVENTS.MESSAGE, _handleMessage);
-  });
-
-  rtmClient.on(CLIENT_EVENTS.RTM.WS_CLOSE, function () {
-    logger.info("RTM client's web socket did close. Unregistering message listener.");
-    rtmClient.removeListener(RTM_EVENTS.MESSAGE, _handleMessage);
+    logger.info("RTM client's web socket did open. Refreshing message listener.");
+    rtmClient.removeAllListeners(RTM_EVENTS.MESSAGE)
+        .addListener(RTM_EVENTS.MESSAGE, function (message) {
+          dispatcher.handle(message);
+        });
   });
 
   rtmClient.start();
